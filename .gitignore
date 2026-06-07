@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+*.egg-info/
+dist/
+eggs/
+*.egg
+
+# 虚拟环境
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 数据文件
+data/
+logs/
+*.db
+*.db-journal
+*.db-wal
+
+# 配置文件（含敏感信息）
+*.local.yaml
+secrets.yaml
+
+# OS
+.DS_Store
+Thumbs.db

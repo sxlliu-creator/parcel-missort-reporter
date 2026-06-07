@@ -1,0 +1,21 @@
+# 核心依赖
+opencv-python>=4.9.0
+numpy>=1.26.0
+onnxruntime>=1.17.0
+ultralytics>=8.2.0
+
+# 配置管理
+pyyaml>=6.0
+
+# Web 服务（hub + WCS mock）
+fastapi>=0.110.0
+uvicorn>=0.27.0
+
+# 边缘节点上报
+httpx>=0.27.0
+
+# 本地缓冲队列
+sqlite3  # stdlib
+
+# 日志
+loguru>=0.7.0

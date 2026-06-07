@@ -1,0 +1,52 @@
+# 系统全局参数
+
+system:
+  node_id: "edge-node-01"
+  node_name: "边缘节点01"
+
+  # 检测参数
+  detection:
+    # 帧差法预检阈值（0-255），超过此值认为画面有变化
+    frame_diff_threshold: 25
+    # 帧差变化像素比例阈值，超过此比例才触发 YOLO 推理
+    frame_diff_ratio: 0.02
+    # YOLO 检测置信度阈值
+    yolo_conf: 0.3
+    # YOLO 模型路径（首次运行自动下载）
+    yolo_model: "yolov8n.pt"
+    # 推理间隔（帧），跳帧推理，1=每帧都推理
+    inference_interval: 1
+    # 跟踪器：botsort 或 bytetrack
+    tracker: "bytetrack.yaml"
+    # 防重复触发冷却时间（秒），同一包裹在冷却期内不会重复上报
+    cooldown_seconds: 3.0
+    # 推理尺寸
+    imgsz: 640
+    # 推理设备：cpu / cuda:0
+    device: "cpu"
+
+  # 上报参数
+  reporter:
+    # WCS hub 地址（中央汇聚服务）
+    hub_url: "http://localhost:8800"
+    # 上报超时（秒）
+    timeout: 5.0
+    # 重试次数
+    max_retries: 3
+    # 本地缓冲最大条数（超出丢弃最旧）
+    buffer_max_size: 10000
+    # 缓冲数据库路径
+    buffer_db: "./data/event_buffer.db"
+
+  # 日志
+  logging:
+    level: "INFO"
+    file: "./logs/edge_node.log"
+    rotation: "10 MB"
+    retention: "7 days"
+
+# 中央汇聚服务参数（仅在 hub 模式使用）
+hub:
+  host: "0.0.0.0"
+  port: 8800
+  wcs_endpoint: "http://localhost:9900/api/events"  # WCS 真实地址（或模拟地址）

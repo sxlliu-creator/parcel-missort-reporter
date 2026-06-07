@@ -1,0 +1,68 @@
+# 相机与格口 ROI 配置
+# 每个相机可以覆盖多个格口，每个格口定义一个检测区域
+
+cameras:
+  - id: "CAM-001"
+    name: "格口区A-左侧"
+    source: 0  # USB 摄像头索引，或 RTSP URL
+    width: 1280
+    height: 720
+    fps: 25
+    chutes:  # 该相机覆盖的格口列表
+      - id: "CHUTE-A01"
+        name: "格口 A01"
+        # ROI 区域：多边形顶点 [(x1,y1), (x2,y2), ...] 按顺序围成闭合区域
+        roi: [[100, 50], [350, 50], [350, 300], [100, 300]]
+        # 判定线：包裹质心从外部穿过此线即视为进入
+        entry_line: [[100, 280], [350, 280]]
+        # entry_line 方向：从上到下为 "enter"，从下到上为 "exit"
+        direction: "enter"
+
+      - id: "CHUTE-A02"
+        name: "格口 A02"
+        roi: [[400, 50], [650, 50], [650, 300], [400, 300]]
+        entry_line: [[400, 280], [650, 280]]
+        direction: "enter"
+
+      - id: "CHUTE-A03"
+        name: "格口 A03"
+        roi: [[700, 50], [950, 50], [950, 300], [700, 300]]
+        entry_line: [[700, 280], [950, 280]]
+        direction: "enter"
+
+      - id: "CHUTE-A04"
+        name: "格口 A04"
+        roi: [[100, 350], [350, 350], [350, 600], [100, 600]]
+        entry_line: [[100, 580], [350, 580]]
+        direction: "enter"
+
+      - id: "CHUTE-A05"
+        name: "格口 A05"
+        roi: [[400, 350], [650, 350], [650, 600], [400, 600]]
+        entry_line: [[400, 580], [650, 580]]
+        direction: "enter"
+
+      - id: "CHUTE-A06"
+        name: "格口 A06"
+        roi: [[700, 350], [950, 350], [950, 600], [700, 600]]
+        entry_line: [[700, 580], [950, 580]]
+        direction: "enter"
+
+  - id: "CAM-002"
+    name: "格口区B-右侧"
+    source: 1  # 第二个 USB 摄像头
+    width: 1280
+    height: 720
+    fps: 25
+    chutes:
+      - id: "CHUTE-B01"
+        name: "格口 B01"
+        roi: [[100, 50], [350, 50], [350, 300], [100, 300]]
+        entry_line: [[100, 280], [350, 280]]
+        direction: "enter"
+
+      - id: "CHUTE-B02"
+        name: "格口 B02"
+        roi: [[400, 50], [650, 50], [650, 300], [400, 300]]
+        entry_line: [[400, 280], [650, 280]]
+        direction: "enter"

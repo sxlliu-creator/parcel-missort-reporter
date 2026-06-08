@@ -31,6 +31,7 @@ class DetectionEvent:
     parcel_id: Optional[str] = None  # 后续条码识别时使用
     confidence: float = 0.0
     track_id: int = -1
+    bbox: Optional[Tuple] = None  # (x1, y1, x2, y2)
     # 预留：包裹形态特征
     parcel_shape: Optional[Dict] = field(default_factory=dict)
 
@@ -247,7 +248,7 @@ class ChuteDetector:
             device=self.detection_cfg.device,
             tracker=self.detection_cfg.tracker,
             verbose=False,
-            classes=[0],  # 只检测 person=0 的类，测试用；后期改为包裹类
+            classes=None,  # 检测所有类；后期可限为包裹类
         )
 
         if results[0].boxes is None:

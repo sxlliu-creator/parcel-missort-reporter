@@ -9,12 +9,14 @@ system:
     # 帧差法预检阈值（0-255），超过此值认为画面有变化
     frame_diff_threshold: 25
     # 帧差变化像素比例阈值，超过此比例才触发 YOLO 推理
-    frame_diff_ratio: 0.02
-    # YOLO 检测置信度阈值
-    yolo_conf: 0.3
+    # 调低便于调试（0.005 = 0.5%）
+    frame_diff_ratio: 0.005
+    # YOLO 检测置信度阈值（调试时调低，正式用 0.3）
+    yolo_conf: 0.1
     # YOLO 模型路径（首次运行自动下载）
     yolo_model: "yolov8n.pt"
-    # 推理间隔（帧），跳帧推理，1=每帧都推理
+    # 推理间隔（帧），跳帧推理，1=每帧都推理，10=每10帧推理一次
+    # 调试时设为 1
     inference_interval: 1
     # 跟踪器：botsort 或 bytetrack
     tracker: "bytetrack.yaml"

@@ -15,6 +15,7 @@ ROI 标定工具 — 纯 OpenCV 窗口操作，无需控制台输入
   - q/Esc     : 不保存，退出
   - 空格      : 跳到下一帧（换参考画面）
   - d         : 删除上一个保存的格口
+  - e         : 编辑模式 - 给已保存的格口补触发线（再按 e 切换下一格口）
 """
 import sys
 import cv2
@@ -36,6 +37,7 @@ g_trigger = []      # 当前触发线
 g_rois = []         # 已保存 [{id, polygon, trigger}]
 g_mode = "roi"      # "roi" | "trigger"
 g_base = None       # 参考帧
+g_edit_idx = -1     # 编辑模式：正在编辑的格口索引，-1 = 不在编辑
 g_msg = ""          # 底部提示（3 秒后清除）
 g_msg_timer = 0
 
@@ -60,14 +62,21 @@ def draw_overlay(base):
         cv2.fillPoly(overlay, [poly], (0, 180, 0))
     cv2.addWeighted(overlay, 0.3, img, 0.7, 0, img)
 
-    for r in g_rois:
+    for i, r in enumerate(g_rois):
         poly = np.array(r["polygon"], np.int32)
-        cv2.polylines(img, [poly], True, (0, 255, 0), 2)
+        if i == g_edit_idx:
+            # 编辑中的格口：橙色高亮
+            cv2.polylines(img, [poly], True, (0, 200, 255), 3)
+            cv2.fillPoly(overlay, [poly], (0, 200, 255))
+            cv2.addWeighted(overlay, 0.25, img, 0.75, 0, img)
+        else:
+            cv2.polylines(img, [poly], True, (0, 255, 0), 2)
         cx, cy = int(poly[:, 0].mean()), int(poly[:, 1].mean())
+        lbl = r["id"] + (" [EDIT]" if i == g_edit_idx else "")
         # 文字描边
-        cv2.putText(img, r["id"], (cx - 25, cy + 5),
+        cv2.putText(img, lbl, (cx - 30, cy + 5),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 4)
-        cv2.putText(img, r["id"], (cx - 25, cy + 5),
+        cv2.putText(img, lbl, (cx - 30, cy + 5),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
         # 触发线
         tl = r.get("trigger")
@@ -96,10 +105,14 @@ def draw_overlay(base):
     panel = np.zeros((80, w, 3), dtype=np.uint8)
     panel[:] = (40, 40, 40)
     mode_str = "[触发线模式] 点2个点" if g_mode == "trigger" else "[ROI模式]"
+    if g_edit_idx >= 0 and g_edit_idx < len(g_rois):
+        r = g_rois[g_edit_idx]
+        has_tl = "无触发线" if not r.get("trigger") else "有触发线"
+        mode_str += f"  |  编辑: {r['id']} ({has_tl})"
     status_lines = [
         f"{mode_str}  下一个: A{_AUTO_INDEX:02d}  已保存: {len(g_rois)}",
         f"ROI顶点: {len(g_points)}  |  触发线: {len(g_trigger)}/2",
-        "左键+点  c闭合  l触发线  n保存+下一格口  s全部保存  q退出  空格换帧  d撤销上一格口",
+        "c闭合  l画触发线  n保存+下一格口  s全部保存  q退出  空格换帧  d撤销  e编辑触发线",
     ]
     for i, line in enumerate(status_lines):
         cv2.putText(panel, line, (10, 18 + i * 22),
@@ -117,7 +130,7 @@ def draw_overlay(base):
 
 
 def mouse_cb(event, x, y, flags, param):
-    global g_points, g_trigger, g_mode
+    global g_points, g_trigger, g_mode, g_edit_idx
     if event != cv2.EVENT_LBUTTONDOWN and event != cv2.EVENT_RBUTTONDOWN:
         return
 
@@ -138,7 +151,13 @@ def mouse_cb(event, x, y, flags, param):
             g_trigger.append([x, real_y])
             if len(g_trigger) == 2:
                 g_mode = "roi"
-                show_msg("触发线完成，已切回 ROI 模式。按 'n' 保存此格口")
+                # 编辑模式下：自动保存触发线到当前格口
+                if g_edit_idx >= 0 and g_edit_idx < len(g_rois):
+                    g_rois[g_edit_idx]["trigger"] = [[int(x), int(y)] for x, y in g_trigger]
+                    show_msg(f"触发线已保存到 {g_rois[g_edit_idx]['id']}！按 e 切换下一格口")
+                    g_trigger = []
+                else:
+                    show_msg("触发线完成，已切回 ROI 模式。按 'n' 保存此格口")
             else:
                 show_msg(f"触发线点1: ({x},{real_y}), 请再点1个")
     else:
@@ -220,6 +239,7 @@ def main():
     print("  空格        : 换参考帧")
     print("  d           : 删除上一个格口")
     print("  q / Esc     : 退出不保存")
+    print("  e           : 补触发线（编辑已保存的格口）")
     print("====================\n")
 
     cv2.namedWindow(WINDOW, cv2.WINDOW_NORMAL)
@@ -256,6 +276,15 @@ def main():
             show_msg("请在格口入口处点2个点（包裹进入方向: 外->内）")
 
         elif key == ord('n'):
+            if g_edit_idx >= 0:
+                # 编辑模式下：退出编辑，不保存新 ROI
+                g_edit_idx = -1
+                g_points = []
+                g_trigger = []
+                g_mode = "roi"
+                show_msg("已退出编辑模式。继续标定新格口。")
+                continue
+
             if len(g_points) < 3:
                 show_msg(f"顶点不足({len(g_points)})，请至少添加3个点")
                 continue
@@ -275,11 +304,52 @@ def main():
                 removed = g_rois.pop()
                 global _AUTO_INDEX
                 _AUTO_INDEX = max(1, _AUTO_INDEX - 1)
+                if g_edit_idx >= len(g_rois):
+                    g_edit_idx = -1  # 删掉的刚好是编辑中的
                 show_msg(f"已删除 {removed['id']}")
             else:
                 show_msg("无已保存的格口可删除")
 
+        elif key == ord('e'):
+            # 编辑模式：给已保存的格口补触发线
+            if not g_rois:
+                show_msg("尚未保存任何格口")
+            elif g_edit_idx < 0:
+                # 进入编辑模式：找到第一个无触发线的格口
+                found = False
+                for i, r in enumerate(g_rois):
+                    if not r.get("trigger") or len(r["trigger"]) != 2:
+                        g_edit_idx = i
+                        found = True
+                        break
+                if not found:
+                    g_edit_idx = 0  # 全都有触发线，从第一个开始
+                g_points = []
+                g_trigger = []
+                g_mode = "roi"
+                show_msg(f"编辑模式: {g_rois[g_edit_idx]['id']}。按 l 画触发线，按 e 切换下一个")
+            else:
+                # 切换到下一个需要触发线的格口
+                found = False
+                for i in range(g_edit_idx + 1, len(g_rois)):
+                    if not g_rois[i].get("trigger") or len(g_rois[i]["trigger"]) != 2:
+                        g_edit_idx = i
+                        found = True
+                        break
+                if found:
+                    g_points = []
+                    g_trigger = []
+                    g_mode = "roi"
+                    show_msg(f"编辑模式: {g_rois[g_edit_idx]['id']}。按 l 画触发线")
+                else:
+                    g_edit_idx = -1
+                    g_points = []
+                    g_trigger = []
+                    g_mode = "roi"
+                    show_msg("编辑模式已退出，所有格口都有触发线了。按 s 保存。")
+
         elif key == ord('s'):
+            g_edit_idx = -1  # 退出编辑模式
             if len(g_points) >= 3:
                 cid = next_chute_id()
                 g_rois.append({
